@@ -97,4 +97,4 @@ mvn clean package
 http://localhost:8080/SafeDrive
 
 ## Auteur
-Développé dans le cadre d'un projet de fin d'études.
+Développé dans le cadre d'un projet de fin d'anneé par Zakariya SAHID.
