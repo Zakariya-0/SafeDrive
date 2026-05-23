@@ -1,0 +1,19 @@
+# Maven
+target/
+*.class
+
+# Eclipse
+.classpath
+.project
+.settings/
+.factorypath
+
+# Logs
+*.log
+
+# Base de données (ne jamais pousser les credentials)
+src/main/resources/META-INF/persistence.xml
+
+# IDE
+*.iml
+.idea/

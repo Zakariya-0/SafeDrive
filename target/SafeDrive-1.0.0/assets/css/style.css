@@ -1,0 +1,92 @@
+:root {
+    --primary:       #e94560;
+    --dark-bg:       #1a1a2e;
+    --sidebar-width: 240px;
+}
+
+/* ── Layout ── */
+body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+
+.sidebar {
+    width: var(--sidebar-width);
+    min-height: 100vh;
+    background: var(--dark-bg);
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar .brand {
+    color: var(--primary);
+    font-size: 1.3rem;
+    font-weight: 700;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.sidebar nav { flex: 1; padding-top: .5rem; }
+
+.sidebar .nav-link {
+    color: rgba(255,255,255,.65);
+    padding: .7rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    transition: all .18s;
+    border-left: 3px solid transparent;
+    font-size: .92rem;
+}
+
+.sidebar .nav-link:hover {
+    color: #fff;
+    background: rgba(233,69,96,.15);
+    border-left-color: var(--primary);
+}
+
+.sidebar-footer {
+    padding: 1rem 0;
+    border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.main-content {
+    margin-left: var(--sidebar-width);
+    padding: 2rem;
+    min-height: 100vh;
+}
+
+/* ── Topbar ── */
+.topbar {
+    background: #fff;
+    padding: .9rem 1.5rem;
+    margin: -2rem -2rem 1.75rem;
+    box-shadow: 0 1px 6px rgba(0,0,0,.07);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ── Stat cards ── */
+.stat-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+    transition: transform .18s;
+}
+.stat-card:hover { transform: translateY(-3px); }
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+}
+
+/* ── Tables ── */
+.table th { font-weight: 600; font-size: .83rem; text-transform: uppercase; letter-spacing: .03em; }
+.table td { font-size: .9rem; vertical-align: middle; }
