@@ -1,2 +1,2 @@
 # SafeDrive
-Application de gestion de flotte JEE
+SafeDrive est une plateforme web complète de gestion de flotte automobile et de traitement intelligent des accidents, développée en Java EE (Jakarta EE) avec Apache Tomcat 10.1. L'application intègre un microservice d'intelligence artificielle basé sur MobileNetV2 (PyTorch/FastAPI) pour classifier automatiquement la gravité des accidents (Mineur/Grave) à partir de photos. Elle propose un système de notifications en temps réel via WebSocket, un suivi GPS en direct des chauffeurs sur carte interactive (Leaflet.js), la génération automatique de rapports PDF, et une gestion des rôles (Admin, Manager, Chauffeur) sécurisée par JWT. Stack : Java 21 · Hibernate 6 · PostgreSQL 16 · Bootstrap 5 · Python 3 · 
