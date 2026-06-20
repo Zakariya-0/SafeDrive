@@ -1,92 +1,39 @@
-:root {
-    --primary:       #e94560;
-    --dark-bg:       #1a1a2e;
-    --sidebar-width: 240px;
+/* ── SafeDrive — custom overrides for Tabler UI ── */
+
+/* Map heights */
+#accident-map { height: 420px; border-radius: .5rem; }
+#picker-map   { height: 260px; border-radius: .5rem; border: 1px solid var(--tblr-border-color); cursor: crosshair; }
+#detail-map   { height: 300px; border-radius: .5rem; border: 1px solid var(--tblr-border-color); }
+#map          { height: calc(100vh - 190px); border-radius: .5rem; min-height: 400px; }
+
+/* Stat card hover */
+.stat-card { transition: transform .18s, box-shadow .18s; }
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.12) !important; }
+
+/* Sidebar user avatar circle */
+.sidebar-user-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #e94560; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .75rem; flex-shrink: 0;
 }
 
-/* ── Layout ── */
-body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
-
-.sidebar {
-    width: var(--sidebar-width);
-    min-height: 100vh;
-    background: var(--dark-bg);
-    position: fixed;
-    top: 0; left: 0;
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
+/* Unread notification highlight */
+.notif-item-unread { background: #fff8f0 !important; }
+.notif-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #e94560; flex-shrink: 0; margin-top: 5px;
 }
 
-.sidebar .brand {
-    color: var(--primary);
-    font-size: 1.3rem;
-    font-weight: 700;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid rgba(255,255,255,.08);
-}
+/* Detail page labels */
+.info-label { font-size: .72rem; color: var(--tblr-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .2rem; }
+.info-value  { font-size: .95rem; font-weight: 500; }
 
-.sidebar nav { flex: 1; padding-top: .5rem; }
+/* File preview */
+#img-preview { max-height: 160px; border-radius: .5rem; object-fit: cover; }
 
-.sidebar .nav-link {
-    color: rgba(255,255,255,.65);
-    padding: .7rem 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: .6rem;
-    transition: all .18s;
-    border-left: 3px solid transparent;
-    font-size: .92rem;
-}
+/* Search highlight */
+.search-highlight { background: #fff3cd; }
 
-.sidebar .nav-link:hover {
-    color: #fff;
-    background: rgba(233,69,96,.15);
-    border-left-color: var(--primary);
-}
-
-.sidebar-footer {
-    padding: 1rem 0;
-    border-top: 1px solid rgba(255,255,255,.08);
-}
-
-.main-content {
-    margin-left: var(--sidebar-width);
-    padding: 2rem;
-    min-height: 100vh;
-}
-
-/* ── Topbar ── */
-.topbar {
-    background: #fff;
-    padding: .9rem 1.5rem;
-    margin: -2rem -2rem 1.75rem;
-    box-shadow: 0 1px 6px rgba(0,0,0,.07);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-/* ── Stat cards ── */
-.stat-card {
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0,0,0,.07);
-    transition: transform .18s;
-}
-.stat-card:hover { transform: translateY(-3px); }
-
-.stat-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.35rem;
-    flex-shrink: 0;
-}
-
-/* ── Tables ── */
-.table th { font-weight: 600; font-size: .83rem; text-transform: uppercase; letter-spacing: .03em; }
-.table td { font-size: .9rem; vertical-align: middle; }
+/* Pagination */
+.table-pagination .page-link { cursor: pointer; }

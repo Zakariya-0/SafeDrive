@@ -55,6 +55,9 @@ public class Accident {
     @Column(name = "gravite_manuelle", columnDefinition = "boolean default false")
     private Boolean graviteManuelle = false;
 
+    @Column(name = "photo_path", length = 500)
+    private String photoPath;
+
     public Accident() {}
 
     // Getters & Setters
@@ -100,4 +103,7 @@ public class Accident {
     public Boolean getGraviteManuelle()         { return graviteManuelle != null ? graviteManuelle : false; }
     public boolean isGraviteManuelle()          { return graviteManuelle != null && graviteManuelle; }
     public void setGraviteManuelle(Boolean v)   { this.graviteManuelle = v != null ? v : false; }
+
+    public String getPhotoPath()               { return photoPath; }
+    public void setPhotoPath(String v)         { this.photoPath = v; }
 }

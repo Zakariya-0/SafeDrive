@@ -18,7 +18,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.time.LocalDate;
 
 @WebServlet("/app/accidents")
@@ -31,6 +36,14 @@ public class AccidentServlet extends HttpServlet {
     private final NotificationService notificationService = new NotificationService();
     private final AIService           aiService           = new AIService();
 
+    /** Directory where accident photos are stored on the server file system. */
+    private static final String UPLOAD_DIR;
+    static {
+        String base = System.getProperty("catalina.home");
+        if (base == null || base.isBlank()) base = System.getProperty("java.io.tmpdir");
+        UPLOAD_DIR = base + File.separator + "safedrive-uploads" + File.separator + "accidents";
+    }
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -39,6 +52,50 @@ public class AccidentServlet extends HttpServlet {
         Long   currentUserId = (Long)   req.getAttribute("currentUserId");
         String action        = req.getParameter("action");
 
+        // ── Serve accident photo (ADMIN / MANAGER only) ──────────────────────
+        if ("photo".equals(action)) {
+            if ("DRIVER".equals(role)) {
+                resp.sendError(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
+            Long id = Long.parseLong(req.getParameter("id"));
+            Accident acc = accidentService.findById(id).orElse(null);
+            if (acc == null || acc.getPhotoPath() == null || acc.getPhotoPath().isBlank()) {
+                resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+            File photoFile;
+            try {
+                // Validate path is inside expected upload directory (prevent path traversal)
+                photoFile = new File(acc.getPhotoPath()).getCanonicalFile();
+                File uploadBase = new File(UPLOAD_DIR).getCanonicalFile();
+                if (!photoFile.getPath().startsWith(uploadBase.getPath())) {
+                    resp.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    return;
+                }
+            } catch (IOException e) {
+                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                return;
+            }
+            if (!photoFile.exists() || !photoFile.isFile()) {
+                resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+            String contentType = getServletContext().getMimeType(photoFile.getName());
+            if (contentType == null) contentType = "image/jpeg";
+            resp.setContentType(contentType);
+            resp.setContentLengthLong(photoFile.length());
+            resp.setHeader("Cache-Control", "private, max-age=86400");
+            try (InputStream in  = new FileInputStream(photoFile);
+                 OutputStream out = resp.getOutputStream()) {
+                byte[] buf = new byte[8192];
+                int n;
+                while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+            }
+            return;
+        }
+
+        // ── Accident detail ───────────────────────────────────────────────────
         if ("detail".equals(action)) {
             Long id = Long.parseLong(req.getParameter("id"));
             Accident detail = accidentService.findByIdWithDetails(id).orElse(null);
@@ -57,6 +114,7 @@ public class AccidentServlet extends HttpServlet {
             return;
         }
 
+        // ── Update status ─────────────────────────────────────────────────────
         if ("updateStatus".equals(action) && !"DRIVER".equals(role)) {
             Long statusId = Long.parseLong(req.getParameter("id"));
             accidentService.updateStatus(statusId, AccidentStatus.valueOf(req.getParameter("status")));
@@ -69,12 +127,19 @@ public class AccidentServlet extends HttpServlet {
             return;
         }
 
+        // ── Delete ────────────────────────────────────────────────────────────
         if ("delete".equals(action) && "ADMIN".equals(role)) {
+            // Also delete the photo file if it exists
+            Accident toDelete = accidentService.findById(Long.parseLong(req.getParameter("id"))).orElse(null);
+            if (toDelete != null && toDelete.getPhotoPath() != null) {
+                new File(toDelete.getPhotoPath()).delete();
+            }
             accidentService.deleteAccident(Long.parseLong(req.getParameter("id")));
             resp.sendRedirect(req.getContextPath() + "/app/accidents");
             return;
         }
 
+        // ── Accident list ─────────────────────────────────────────────────────
         if ("DRIVER".equals(role)) {
             req.setAttribute("accidents", accidentService.getAccidentsByDriver(currentUserId));
             req.setAttribute("chauffeurVehicle",
@@ -82,7 +147,6 @@ public class AccidentServlet extends HttpServlet {
         } else {
             req.setAttribute("accidents", accidentService.getAllAccidents());
         }
-
         req.setAttribute("drivers",  userService.getUsersByRole(Role.DRIVER));
         req.setAttribute("vehicles", vehicleService.getAllVehicles());
         req.getRequestDispatcher("/WEB-INF/views/accidents.jsp").forward(req, resp);
@@ -92,16 +156,11 @@ public class AccidentServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        System.out.println("=== doPost AccidentServlet appelé ===");
-        System.out.println("=== Content-Type: " + req.getContentType() + " ===");
-
         String role          = (String) req.getAttribute("currentRole");
         Long   currentUserId = (Long)   req.getAttribute("currentUserId");
+        String action        = req.getParameter("action");
 
-        // Pour multipart, getParameter() fonctionne normalement avec @MultipartConfig
-        String action = req.getParameter("action");
-        System.out.println("=== action param: " + action + " ===");
-
+        // ── Reclassify severity ───────────────────────────────────────────────
         if ("reclassify".equals(action) && !"DRIVER".equals(role)) {
             Long id = Long.parseLong(req.getParameter("id"));
             accidentService.updateSeverity(id, AccidentSeverity.valueOf(req.getParameter("severity")));
@@ -109,13 +168,14 @@ public class AccidentServlet extends HttpServlet {
             return;
         }
 
+        // ── Declare accident ──────────────────────────────────────────────────
         String driverIdParam = req.getParameter("driverId");
         Long driverId = "DRIVER".equals(role) ? currentUserId
                 : (driverIdParam != null && !driverIdParam.isBlank()
-                ? Long.parseLong(driverIdParam) : currentUserId);
+                        ? Long.parseLong(driverIdParam) : currentUserId);
 
-        String latParam = req.getParameter("latitude");
-        String lngParam = req.getParameter("longitude");
+        String latParam  = req.getParameter("latitude");
+        String lngParam  = req.getParameter("longitude");
         Double latitude  = (latParam != null && !latParam.isBlank()) ? Double.parseDouble(latParam) : null;
         Double longitude = (lngParam != null && !lngParam.isBlank()) ? Double.parseDouble(lngParam) : null;
 
@@ -132,39 +192,53 @@ public class AccidentServlet extends HttpServlet {
                     longitude
             );
         } catch (Exception e) {
-            System.out.println("=== ERREUR declareAccident: " + e.getClass().getSimpleName() + " - " + e.getMessage() + " ===");
             e.printStackTrace();
             throw new ServletException("Erreur lors de la déclaration de l'accident", e);
         }
         notificationService.createForAccident(saved);
 
-        // Classification IA — image optionnelle
+        // ── Handle uploaded photo + AI classification ─────────────────────────
         try {
             Part imagePart = req.getPart("image");
-            System.out.println("[DEBUG] imagePart = " + imagePart);
-            System.out.println("[DEBUG] size = " + (imagePart != null ? imagePart.getSize() : "NULL"));
-
             if (imagePart != null && imagePart.getSize() > 0) {
                 byte[] imageBytes = imagePart.getInputStream().readAllBytes();
-                System.out.println("[DEBUG] imageBytes length = " + imageBytes.length);
 
-                AIResult aiResult = aiService.classifyImage(imageBytes);
-                System.out.println("[DEBUG] AI Result: severity=" + aiResult.getSeverity()
-                        + " confidence=" + aiResult.getConfidence());
+                // 1. Save photo to disk
+                try {
+                    File dir = new File(UPLOAD_DIR);
+                    if (!dir.exists()) dir.mkdirs();
+                    String ext      = getExtension(imagePart.getSubmittedFileName());
+                    String fileName = "accident_" + saved.getId() + "_" + System.currentTimeMillis() + ext;
+                    File   dest     = new File(dir, fileName);
+                    try (FileOutputStream fos = new FileOutputStream(dest)) {
+                        fos.write(imageBytes);
+                    }
+                    accidentService.updatePhotoPath(saved.getId(), dest.getAbsolutePath());
+                    System.out.println("[SafeDrive] Photo saved: " + dest.getAbsolutePath());
+                } catch (Exception e) {
+                    System.err.println("[SafeDrive] Could not save photo: " + e.getMessage());
+                }
 
-                accidentService.updateAIResult(
-                        saved.getId(), aiResult.getSeverity(), aiResult.getConfidence());
-                System.out.println("[DEBUG] AI result saved for accident #" + saved.getId());
-            } else {
-                System.out.println("[DEBUG] imagePart null ou vide — classification IA ignorée");
+                // 2. AI classification
+                try {
+                    AIResult aiResult = aiService.classifyImage(imageBytes);
+                    accidentService.updateAIResult(
+                            saved.getId(), aiResult.getSeverity(), aiResult.getConfidence());
+                } catch (Exception e) {
+                    System.err.println("[SafeDrive] AI classification failed: " + e.getMessage());
+                }
             }
         } catch (Exception e) {
-            System.out.println("[DEBUG] EXCEPTION classification IA : "
-                    + e.getClass().getSimpleName() + " - " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("[SafeDrive] Error processing image part: " + e.getMessage());
         }
 
         resp.sendRedirect(req.getContextPath()
                 + "/app/accidents?action=detail&id=" + saved.getId() + "&newDeclaration=true");
+    }
+
+    private static String getExtension(String filename) {
+        if (filename == null) return ".jpg";
+        int dot = filename.lastIndexOf('.');
+        return (dot >= 0 && dot < filename.length() - 1) ? filename.substring(dot).toLowerCase() : ".jpg";
     }
 }

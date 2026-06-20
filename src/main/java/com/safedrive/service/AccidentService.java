@@ -64,6 +64,13 @@ public class AccidentService {
         return accidentDAO.save(a);
     }
 
+    public Accident updatePhotoPath(Long accidentId, String photoPath) {
+        Accident a = accidentDAO.findById(accidentId)
+                .orElseThrow(() -> new IllegalArgumentException("Accident not found"));
+        a.setPhotoPath(photoPath);
+        return accidentDAO.save(a);
+    }
+
     public void deleteAccident(Long id)                           { accidentDAO.delete(id); }
     public Optional<Accident> findById(Long id)                   { return accidentDAO.findById(id); }
     public Optional<Accident> findByIdWithDetails(Long id)        { return accidentDAO.findByIdWithDetails(id); }
